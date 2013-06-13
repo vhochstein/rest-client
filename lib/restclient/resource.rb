@@ -47,54 +47,47 @@ module RestClient
     end
 
     def get(additional_headers={}, &block)
-      headers = (options[:headers] || {}).merge(additional_headers)
-      Request.execute(options.merge(
-              :method => :get,
-              :url => url,
-              :headers => headers), &(block || @block))
+      execute(:get, additional_headers={}, nil, &block)
     end
 
     def head(additional_headers={}, &block)
-      headers = (options[:headers] || {}).merge(additional_headers)
-      Request.execute(options.merge(
-              :method => :head,
-              :url => url,
-              :headers => headers), &(block || @block))
+      execute(:head, additional_headers={}, nil, &block)
     end
 
     def post(payload, additional_headers={}, &block)
-      headers = (options[:headers] || {}).merge(additional_headers)
-      Request.execute(options.merge(
-              :method => :post,
-              :url => url,
-              :payload => payload,
-              :headers => headers), &(block || @block))
+      execute(:post, additional_headers={}, payload, &block)
     end
 
     def put(payload, additional_headers={}, &block)
-      headers = (options[:headers] || {}).merge(additional_headers)
-      Request.execute(options.merge(
-              :method => :put,
-              :url => url,
-              :payload => payload,
-              :headers => headers), &(block || @block))
+      execute(:put, additional_headers={}, payload, &block)
     end
 
     def patch(payload, additional_headers={}, &block)
-      headers = (options[:headers] || {}).merge(additional_headers)
-      Request.execute(options.merge(
-              :method => :patch,
-              :url => url,
-              :payload => payload,
-              :headers => headers), &(block || @block))
+      execute(:path, additional_headers={}, nil, &block)
     end
 
     def delete(additional_headers={}, &block)
+      execute(:delete, additional_headers={}, nil, &block)
+    end
+
+    def execute(http_method, additional_headers={}, payload = nil, &block)
       headers = (options[:headers] || {}).merge(additional_headers)
-      Request.execute(options.merge(
-              :method => :delete,
-              :url => url,
-              :headers => headers), &(block || @block))
+      request_options = options.merge(
+          :method => http_method,
+          :url => url,
+          :headers => headers)
+
+      request_options[:payload] = payload unless payload.nil?
+      request = Request.new(request_options)
+
+      response = request.execute( &(block || @block))
+
+      unless request.digest_auth_server_info.nil?
+        @options[:digest_auth_server_info] = request.digest_auth_server_info
+        @options[:digest_auth] = request.digest_auth
+      end
+
+      response
     end
 
     def to_s
@@ -151,8 +144,8 @@ module RestClient
       case
         when block_given? then self.class.new(concat_urls(url, suburl), options, &new_block)
         when block        then self.class.new(concat_urls(url, suburl), options, &block)
-      else
-        self.class.new(concat_urls(url, suburl), options)
+        else
+          self.class.new(concat_urls(url, suburl), options)
       end
     end
 

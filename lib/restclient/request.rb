@@ -30,7 +30,7 @@ module RestClient
                 :payload, :user, :password, :timeout, :max_redirects,
                 :open_timeout, :raw_response, :verify_ssl, :ssl_client_cert,
                 :ssl_client_key, :ssl_ca_file, :processed_headers, :args,
-                :ssl_version, :cert_store, :persistent
+                :ssl_version, :cert_store, :persistent, :digest_auth_server_info, :digest_auth
 
     def self.execute(args, & block)
       new(args).execute(& block)
@@ -48,6 +48,8 @@ module RestClient
       @payload = Payload.generate(args[:payload])
       @user = args[:user]
       @password = args[:password]
+      @digest_auth = args[:digest_auth]
+      @digest_auth_server_info = args[:digest_auth_server_info]
       @timeout = args[:timeout]
       @open_timeout = args[:open_timeout]
       @block_response = args[:block_response]
@@ -211,23 +213,30 @@ module RestClient
 
     def setup_credentials(uri, req)
       if user
-        urii = uri.clone
-        urii.user = nil
-        urii.password = nil
-        RestClient.head(urii.to_s) { |response, request, result|
-          if result['www-authenticate'] =~ /Digest realm=/
-            digest_auth = Net::HTTP::DigestAuth.new
-            uri.user = user
-            uri.password = password
-            www_auth_response = result['www-authenticate']
-            www_auth_response["algorithm=\"MD5\""] = "algorithm=MD5"
-            auth = digest_auth.auth_header uri, www_auth_response, @method.to_s.upcase
-            req['Authorization'] = auth
-          elsif result['www-authenticate'] =~ /Basic realm=/
-            req.basic_auth(user, password)
-          end
-        }
+        if digest_auth_server_info.nil?
+          urii = uri.clone
+          urii.user = nil
+          urii.password = nil
+          RestClient.head(urii.to_s) { |response, request, result|
+            if result['www-authenticate'] =~ /Digest realm=/
+              @digest_auth ||= Net::HTTP::DigestAuth.new
+              @digest_auth_server_info= result['www-authenticate']
+              @digest_auth_server_info["algorithm=\"MD5\""] = "algorithm=MD5"
+              prepare_for_digest_auth(uri, req)
+            elsif result['www-authenticate'] =~ /Basic realm=/
+              req.basic_auth(user, password)
+            end
+          }
+        else
+          prepare_for_digest_auth(uri, req)
+        end
       end
+    end
+
+    def prepare_for_digest_auth(uri, req)
+      uri.user = user
+      uri.password = password
+      req['Authorization'] = digest_auth.auth_header uri, digest_auth_server_info, @method.to_s.upcase
     end
 
     def fetch_body(http_response)
