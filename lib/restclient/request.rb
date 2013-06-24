@@ -155,7 +155,6 @@ module RestClient
       app_name += '-persistent' if @persistent
       net = Net::HTTP::Persistent.new(app_name, proxy)
       if  uri.is_a?(URI::HTTPS)
-        net.use_ssl = true
         net.ssl_version = @ssl_version
       end
 
