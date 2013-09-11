@@ -47,27 +47,27 @@ module RestClient
     end
 
     def get(additional_headers={}, &block)
-      execute(:get, additional_headers={}, nil, &block)
+      execute(:get, additional_headers, nil, &block)
     end
 
     def head(additional_headers={}, &block)
-      execute(:head, additional_headers={}, nil, &block)
+      execute(:head, additional_headers, nil, &block)
     end
 
     def post(payload, additional_headers={}, &block)
-      execute(:post, additional_headers={}, payload, &block)
+      execute(:post, additional_headers, payload, &block)
     end
 
     def put(payload, additional_headers={}, &block)
-      execute(:put, additional_headers={}, payload, &block)
+      execute(:put, additional_headers, payload, &block)
     end
 
     def patch(payload, additional_headers={}, &block)
-      execute(:path, additional_headers={}, nil, &block)
+      execute(:path, additional_headers, nil, &block)
     end
 
     def delete(additional_headers={}, &block)
-      execute(:delete, additional_headers={}, nil, &block)
+      execute(:delete, additional_headers, nil, &block)
     end
 
     def execute(http_method, additional_headers={}, payload = nil, &block)
